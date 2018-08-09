@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -74,13 +76,24 @@ func process(req *http.Request, key string, ch chan []byte) {
 	// }
 	// log.Printf("request body = %s", string(b))
 
-	r, err := http.NewRequest(req.Method, "http://localhost:3337", req.Body)
+	// FIXME(liangzuobin)
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, req.Body); err != nil {
+		log.Printf("copy request body failed, err: %v", err)
+		ch <- []byte(`{"status":"FAILED","message":"internal server error","data":{}}`)
+		return
+	}
+
+	// time.Sleep(2 * time.Second)
+
+	r, err := http.NewRequest(req.Method, "http://localhost:3337", &buf)
 	if err != nil {
-		log.Printf("copy request failed, err: %v", err)
+		log.Printf("new request failed, err: %v", err)
 		ch <- []byte(`{"status":"FAILED","message":"internal server error","data":{}}`)
 		return
 	}
 	defer req.Body.Close()
+
 	for n, v := range req.Header {
 		r.Header.Set(n, v[0])
 	}
