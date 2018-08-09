@@ -48,6 +48,7 @@ func main() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Kill, os.Interrupt)
 	<-ch
+	defer close(ch)
 
 	if svr != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -55,6 +56,7 @@ func main() {
 		if err := svr.Shutdown(ctx); err != nil {
 			log.Fatal(err)
 		}
+		log.Println("server shutdown gracefully")
 	}
 }
 
